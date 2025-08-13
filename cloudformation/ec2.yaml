@@ -1,0 +1,113 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Description: 'CFN: VPC + EC2 (AL2023 via SSM), public subnet, SSH locked by CIDR'
+
+Parameters:
+  KeyName:
+    Type: AWS::EC2::KeyPair::KeyName
+    Description: Existing EC2 Key Pair name to SSH with
+  SSHCidr:
+    Type: String
+    Default: 0.0.0.0/0
+    Description: CIDR allowed to SSH (use your-ip/32)
+  AmiParam:
+    Type: 'AWS::SSM::Parameter::Value<AWS::EC2::Image::Id>'
+    Default: /aws/service/ami-amazon-linux-latest/al2023-ami-kernel-6.1-x86_64
+  InstanceType:
+    Type: String
+    Default: t3.micro
+  PreferredAZ:
+    Type: String
+    Default: us-east-1f   # choose a,b,c,d,f if one AZ is unsupported for your type
+  VpcCidr:
+    Type: String
+    Default: 10.60.0.0/16   # pick a range that does NOT overlap your Terraform VPC
+  PublicSubnetCidr:
+    Type: String
+    Default: 10.60.1.0/24
+
+Resources:
+  VPC:
+    Type: AWS::EC2::VPC
+    Properties:
+      CidrBlock: !Ref VpcCidr
+      EnableDnsSupport: true
+      EnableDnsHostnames: true
+      Tags:
+        - { Key: Name, Value: vpc-cfn-ec2 }
+
+  IGW:
+    Type: AWS::EC2::InternetGateway
+    Properties:
+      Tags: [ { Key: Name, Value: igw-cfn-ec2 } ]
+
+  AttachIGW:
+    Type: AWS::EC2::VPCGatewayAttachment
+    Properties:
+      InternetGatewayId: !Ref IGW
+      VpcId: !Ref VPC
+
+  PublicSubnet:
+    Type: AWS::EC2::Subnet
+    Properties:
+      VpcId: !Ref VPC
+      CidrBlock: !Ref PublicSubnetCidr
+      MapPublicIpOnLaunch: true
+      AvailabilityZone: !Ref PreferredAZ
+      Tags: [ { Key: Name, Value: subnet-public-cfn-ec2 } ]
+
+  PublicRT:
+    Type: AWS::EC2::RouteTable
+    Properties:
+      VpcId: !Ref VPC
+      Tags: [ { Key: Name, Value: rt-public-cfn-ec2 } ]
+
+  PublicRoute:
+    Type: AWS::EC2::Route
+    DependsOn: AttachIGW
+    Properties:
+      RouteTableId: !Ref PublicRT
+      DestinationCidrBlock: 0.0.0.0/0
+      GatewayId: !Ref IGW
+
+  RTA:
+    Type: AWS::EC2::SubnetRouteTableAssociation
+    Properties:
+      RouteTableId: !Ref PublicRT
+      SubnetId: !Ref PublicSubnet
+
+  SG:
+    Type: AWS::EC2::SecurityGroup
+    Properties:
+      GroupDescription: Allow SSH from parameterized CIDR
+      VpcId: !Ref VPC
+      SecurityGroupIngress:
+        - IpProtocol: tcp
+          FromPort: 22
+          ToPort: 22
+          CidrIp: !Ref SSHCidr
+      Tags: [ { Key: Name, Value: sg-ssh-cfn-ec2 } ]
+
+  EC2:
+    Type: AWS::EC2::Instance
+    Properties:
+      ImageId: !Ref AmiParam
+      InstanceType: !Ref InstanceType
+      KeyName: !Ref KeyName
+      NetworkInterfaces:
+        - AssociatePublicIpAddress: true
+          DeviceIndex: 0
+          SubnetId: !Ref PublicSubnet
+          GroupSet: [ !Ref SG ]
+      Tags:
+        - { Key: Name, Value: cfn-ec2-8894858 }
+
+Outputs:
+  PublicIP:
+    Description: Public IP of the instance
+    Value: !GetAtt EC2.PublicIp
+  SubnetId:
+    Description: Public subnet ID
+    Value: !Ref PublicSubnet
+  VpcId:
+    Description: VPC ID
+    Value: !Ref VPC

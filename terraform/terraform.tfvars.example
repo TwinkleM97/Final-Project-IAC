@@ -1,0 +1,23 @@
+aws_region  = "us-east-1"
+aws_profile = ""                     # or "default" if you use a named profile
+
+student_alias = "twinkle"
+student_id    = "8894858"
+
+enable_bucket_versioning = true
+
+# This must match the key pair used when launching EC2 in AWS
+key_name         = "twinkle-key-2508120151"
+allowed_ssh_cidr = "YOUR.PUBLIC.IP/32"   # e.g. "99.99.99.99/32"
+
+instance_type = "t3.micro"
+
+vpc_cidr = "10.30.0.0/16"
+
+public_subnet_cidrs  = ["10.30.1.0/24", "10.30.2.0/24"]
+private_subnet_cidrs = ["10.30.11.0/24", "10.30.12.0/24"]
+
+db_name              = "proj8870db"
+db_username          = "adminuser"
+db_password          = "ChangeMeStrong123!"
+db_allocated_storage = 20

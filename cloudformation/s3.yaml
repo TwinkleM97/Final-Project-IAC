@@ -1,0 +1,52 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Description: 'CFN: 3 private S3 buckets with PAB + optional versioning'
+Parameters:
+  BucketPrefix: { Type: String }
+  Suffix: { Type: String, Default: demo }
+  EnableVersioning:
+    Type: String
+    AllowedValues: ["true","false"]
+    Default: "true"
+Conditions:
+  DoVersioning: !Equals [ !Ref EnableVersioning, "true" ]
+Resources:
+  BucketA:
+    Type: AWS::S3::Bucket
+    Properties:
+      BucketName: !Sub '${BucketPrefix}-cfn-a-${Suffix}'
+      PublicAccessBlockConfiguration:
+        BlockPublicAcls: true
+        BlockPublicPolicy: true
+        IgnorePublicAcls: true
+        RestrictPublicBuckets: true
+      VersioningConfiguration:
+        Status: !If [ DoVersioning, Enabled, Suspended ]
+
+  BucketB:
+    Type: AWS::S3::Bucket
+    Properties:
+      BucketName: !Sub '${BucketPrefix}-cfn-b-${Suffix}'
+      PublicAccessBlockConfiguration:
+        BlockPublicAcls: true
+        BlockPublicPolicy: true
+        IgnorePublicAcls: true
+        RestrictPublicBuckets: true
+      VersioningConfiguration:
+        Status: !If [ DoVersioning, Enabled, Suspended ]
+
+  BucketC:
+    Type: AWS::S3::Bucket
+    Properties:
+      BucketName: !Sub '${BucketPrefix}-cfn-c-${Suffix}'
+      PublicAccessBlockConfiguration:
+        BlockPublicAcls: true
+        BlockPublicPolicy: true
+        IgnorePublicAcls: true
+        RestrictPublicBuckets: true
+      VersioningConfiguration:
+        Status: !If [ DoVersioning, Enabled, Suspended ]
+
+Outputs:
+  BucketAName: { Value: !Ref BucketA }
+  BucketBName: { Value: !Ref BucketB }
+  BucketCName: { Value: !Ref BucketC }

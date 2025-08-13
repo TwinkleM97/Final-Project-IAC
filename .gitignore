@@ -1,0 +1,23 @@
+# Terraform local state
+*.tfstate
+*.tfstate.*
+.terraform/
+.terraform.lock.hcl
+
+# Sensitive files
+*.pem
+*.key
+*.pub
+*.zip
+
+# System files
+*.log
+.DS_Store
+
+# Environment files
+*.tfvars
+*.tfvars.json
+
+awscliv2.zip
+aws/
+dist/
